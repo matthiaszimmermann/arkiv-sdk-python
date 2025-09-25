@@ -19,6 +19,7 @@ repos:
           - types-requests
           - pytest
           - testcontainers
+          - web3==7.13.0
         args: [--strict]
 
   # Basic hooks for file quality

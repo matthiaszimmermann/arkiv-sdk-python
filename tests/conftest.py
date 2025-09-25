@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 from testcontainers.core.container import DockerContainer
+from web3 import Web3
 
 from .node_container import create_container_node
 
@@ -55,3 +56,21 @@ def arkiv_node() -> Generator[tuple[DockerContainer | None, str, str], None, Non
     # Fall back to containerized node
     logger.info("Using containerized node")
     yield from create_container_node()
+
+
+@pytest.fixture(scope="session")
+def web3_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Web3:
+    """
+    Provide Web3 client connected to HTTP endpoint.
+
+    Returns:
+        Web3 client instance connected to the arkiv node
+    """
+    _, http_url, _ = arkiv_node
+    client = Web3(Web3.HTTPProvider(http_url))
+
+    # Verify connection
+    assert client.is_connected(), f"Failed to connect to {http_url}"
+
+    logger.info(f"Web3 client connected to {http_url}")
+    return client
