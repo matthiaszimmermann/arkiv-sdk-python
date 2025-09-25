@@ -15,12 +15,10 @@ Highlevel goals:
 2. Whatever works for the library should also work for the SDK
 3. Feels like "Library + Entities".
 
-### Underlying Libraries
+### Underlying Library
 
-Go per language with modern and battle tested library.
-
-- Javascript/Typescript: [Viem](https://github.com/wevm/viem). Primary choice for most new web3 projects.
-- Python: [Web3.py](https://github.com/ethereum/web3.py). No good alternatives.
+As underlying library we use [Web3.py](https://github.com/ethereum/web3.py).
+No good alternatives for Python.
 
 ### Naming
 
@@ -28,12 +26,10 @@ Github "Home": `arkiv-network`
 | Language | Element    | Name           | Comment                 |
 |----------|------------|----------------|-------------------------|
 | Python   | Repository | `arkiv-python` | Golem Base repo: `python-sdk` move and rename to `arkiv-python-beta` |
-| TS/JS    | Repository | `arkiv-ts`     | Golem Base repo: `typescript-sdk` move and rename to `arkiv-ts-beta` |
 | Python   | PIP        | `pip install arkiv-sdk`   | or `pip install arkiv` as `arkiv` is not available for Rust |
-| TS/JS    | NPM        | `npm install arkiv-sdk`   | or `npm install arkiv` as `arkiv` is not available for Rust |
 
 
-### Arkiv Client (Python)
+### Arkiv Client
 
 Goal: Make Arkiv feel like "web3.py + entities", maintaining the familiar developer experience that Python web3 developers.
 
@@ -81,39 +77,6 @@ print("Entities deleted")
 # Verify deletion
 exists = client.arkiv.exists_entity(entity_key1)
 print(f"Entity 1 still exists: {exists.exists}")
-```
-
-
-#### Javascript Arkiv Client
-
-Goal: Make Arkiv feel like "viem + entities" rather than a separate library.
-
-```typescript
-import { createArkivPublicClient, createArkivWalletClient } from 'arkiv'
-import { http } from 'viem'
-import { arkivMainnet } from 'arkiv/chains'
-
-const publicClient = createArkivPublicClient({
-  chain: arkivMainnet,
-  transport: http('https://rpc.arkiv.network')
-})
-
-const walletClient = createArkivWalletClient({
-  chain: arkivMainnet,
-  transport: http('https://rpc.arkiv.network'),
-  account: privateKeyToAccount('0x...')
-})
-
-// Standard blockchain operations
-const balance = await publicClient.getBalance({
-  address: '0x...'
-})
-
-// Write operations
-const txHash = await walletClient.createEntity({
-  data: new Uint8Array([1, 2, 3, 4]),
-  annotations: { purpose: 'demo' }
-})
 ```
 
 # Development Guide
