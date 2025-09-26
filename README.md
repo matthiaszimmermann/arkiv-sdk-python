@@ -35,7 +35,7 @@ Goal: Make Arkiv feel like "web3.py + entities", maintaining the familiar develo
 
 A `client.entities.*` approach for consistency with web3.py's module pattern. It clearly communicates that arkiv is a module extension just like eth, net, etc.
 
-Here's a comprehensive example showing how to use the Python Arkiv SDK:
+Here's a "Hello World!" example showing how to use the Python Arkiv SDK:
 
 ```python
 from arkiv import Arkiv
@@ -50,19 +50,16 @@ print(f"Connected: {client.is_connected()}")
 balance = client.eth.get_balance(client.eth.default_account)
 print(f"Account balance: {client.fromWei(balance, 'ether')} ETH")
 
-# Create entities (Arkiv functionality)
-print("\n=== Creating Entities ===")
-
-# Simple entity with data only
-entity_key1 = client.arkiv.create_entity(
-    data=b"Hello, Arkiv!",
+# Simple entity with data only (Arkiv functionality)
+entity_key = client.arkiv.create_entity(
+    data=b"Hello World!",
     annotations={"type": "greeting", "version": 1}
 )
-print(f"Created entity 1: {entity_key1}")
+print(f"Created entity 1: {entity_key}")
 
 # Get individual entity
 print("\n=== Entity Details ===")
-entity = client.arkiv.get_entity(entity_key1)
+entity = client.arkiv.get_entity(entity_key)
 print(f"Entity data: {entity.entity.data.decode()}")
 print(f"Entity annotations: {entity.entity.annotations}")
 print(f"Entity owner: {entity.entity.metadata.owner}")

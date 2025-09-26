@@ -1,7 +1,7 @@
 [project]
 name = "arkiv-sdk"
 version = "0.1.0"
-description = "Add your description here"
+description = "Python SDK for Golem DB networks - Web3.py + Entities"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,18 +9,30 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.8.22,<0.9.0"]
-build-backend = "uv_build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [dependency-groups]
-dev = [
+# Testing infrastructure
+test = [
     "pytest>=8.4.2",
     "testcontainers==4.13.1",
     "websockets>=13.0",
-    "python-dotenv>=1.0.0",
+]
+
+# Code quality and linting
+lint = [
     "mypy>=1.13.0",
     "ruff>=0.8.0",
     "pre-commit>=4.0.0",
+]
+
+# Development utilities
+dev = [
+    "python-dotenv>=1.0.0",
 ]
 
 [tool.pytest.ini_options]

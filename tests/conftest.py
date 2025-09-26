@@ -13,6 +13,8 @@ import pytest
 from testcontainers.core.container import DockerContainer
 from web3 import Web3
 
+from arkiv import Arkiv
+
 from .node_container import create_container_node
 
 logger = logging.getLogger(__name__)
@@ -73,4 +75,22 @@ def web3_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Web
     assert client.is_connected(), f"Failed to connect to {http_url}"
 
     logger.info(f"Web3 client connected to {http_url}")
+    return client
+
+
+@pytest.fixture(scope="session")
+def arkiv_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Web3:
+    """
+    Provide Arkiv client connected to HTTP endpoint.
+
+    Returns:
+        Web3 client instance connected to the arkiv node
+    """
+    _, http_url, _ = arkiv_node
+    client = Arkiv(Web3.HTTPProvider(http_url))
+
+    # Verify connection
+    assert client.is_connected(), f"Failed to connect Arkiv client to {http_url}"
+
+    logger.info(f"Arkiv client connected to {http_url}")
     return client
