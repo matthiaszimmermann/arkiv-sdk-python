@@ -25,18 +25,18 @@ def test_node_connection_http(arkiv_node: tuple[DockerContainer, str, str]) -> N
         timeout=10,
     )
 
-    assert (
-        response.status_code == 200
-    ), f"Arkiv node should respond with 200 OK, got {response.status_code}"
+    assert response.status_code == 200, (
+        f"Arkiv node should respond with 200 OK, got {response.status_code}"
+    )
 
     # Verify it's a proper JSON-RPC response
     json_response = response.json()
-    assert (
-        "result" in json_response or "error" in json_response
-    ), "Response should contain either 'result' or 'error' field"
-    assert (
-        json_response.get("jsonrpc") == "2.0"
-    ), "Response should have jsonrpc version 2.0"
+    assert "result" in json_response or "error" in json_response, (
+        "Response should contain either 'result' or 'error' field"
+    )
+    assert json_response.get("jsonrpc") == "2.0", (
+        "Response should have jsonrpc version 2.0"
+    )
 
     logger.info(f"HTTP connection successful: {rpc_url}")
     logger.info(f"Request response: {json_response}")
@@ -70,12 +70,12 @@ def test_node_connection_ws(
     logger.info(f"WebSocket response: {response}")
 
     # Verify the WebSocket JSON-RPC response
-    assert (
-        "result" in response or "error" in response
-    ), "WebSocket response should contain either 'result' or 'error' field"
-    assert (
-        response.get("jsonrpc") == "2.0"
-    ), "WebSocket response should have jsonrpc version 2.0"
+    assert "result" in response or "error" in response, (
+        "WebSocket response should contain either 'result' or 'error' field"
+    )
+    assert response.get("jsonrpc") == "2.0", (
+        "WebSocket response should have jsonrpc version 2.0"
+    )
     assert response.get("id") == 1, "WebSocket response should have matching request id"
 
     logger.info(f"WebSocket connection successful: {ws_url}")

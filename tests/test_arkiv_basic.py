@@ -52,8 +52,8 @@ def test_arkiv_module_has_client_reference(arkiv_client_http: Arkiv) -> None:
     arkiv_module = arkiv_client_http.arkiv
 
     assert hasattr(arkiv_module, "client"), "Arkiv module should have client reference"
-    assert (
-        arkiv_module.client is arkiv_client_http
-    ), "Client reference should point to parent"
+    assert arkiv_module.client is arkiv_client_http, (
+        "Client reference should point to parent"
+    )
 
     logger.info("✅ Arkiv module has proper client reference")

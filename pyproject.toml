@@ -26,11 +26,9 @@ test = [
 # Code quality and linting
 lint = [
     "mypy>=1.13.0",
-    "ruff>=0.8.0",
+    "ruff==0.13.2",
     "pre-commit>=4.0.0",
-]
-
-# Development utilities
+]# Development utilities
 dev = [
     "python-dotenv>=1.0.0",
 ]
