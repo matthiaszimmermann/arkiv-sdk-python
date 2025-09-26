@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]  # Run on all branches for early feedback
   pull_request:
-    branches: [main]
+    branches: [main]  # Run on PRs targeting main
 
 jobs:
   # Fast linting job with minimal dependencies
