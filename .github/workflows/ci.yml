@@ -88,7 +88,8 @@ jobs:
 
       - name: Verify package can be installed
         run: |
-          uv venv test-install
-          source .venv/bin/activate
+          # Create a temporary virtual environment for testing
+          python -m venv test-install-env
+          source test-install-env/bin/activate
           pip install dist/*.whl
           python -c "from arkiv import Arkiv; print('✅ Package installation successful')"
