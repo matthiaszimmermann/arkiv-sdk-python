@@ -1,4 +1,4 @@
-"""Tests for GolemBaseClient connection and basic functionality."""
+"""Tests for Arkiv client connection and basic functionality."""
 
 import asyncio
 import json

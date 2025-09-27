@@ -1,4 +1,4 @@
-"""Arkiv - Python SDK for Golem DB networks."""
+"""Python SDK for Arkiv networks."""
 
 from .client import Arkiv
 

@@ -1,7 +1,7 @@
 """Arkiv client exceptions."""
 
 
-class AcccountNameException(Exception):
+class AccountNameException(Exception):
     pass
 
 

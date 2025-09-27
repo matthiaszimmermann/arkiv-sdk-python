@@ -1,8 +1,8 @@
-# Golem DB SDK
+# Arkiv SDK
 
-Golem DB is a permissioned storage system for decentralized apps, supporting flexible entities with binary data, annotations, and metadata.
+Arkiv is a permissioned storage system for decentralized apps, supporting flexible entities with binary data, annotations, and metadata.
 
-The Golem DB SDK is the official Python library for interacting with Golem DB networks. It offers a type-safe, developer-friendly API for managing entities, querying data, subscribing to events, and offchain verification—ideal for both rapid prototyping and production use.
+The Arkiv SDK is the official Python library for interacting with Arkiv networks. It offers a type-safe, developer-friendly API for managing entities, querying data, subscribing to events, and offchain verification—ideal for both rapid prototyping and production use.
 
 ## SDK Architecture
 
@@ -17,15 +17,14 @@ Highlevel goals:
 
 ### Underlying Library
 
-As underlying library we use [Web3.py](https://github.com/ethereum/web3.py).
-No good alternatives for Python.
+As underlying library we use [Web3.py](https://github.com/ethereum/web3.py) (no good alternatives).
 
 ### Naming
 
 Github "Home": `arkiv-network`
 | Language | Element    | Name           | Comment                 |
 |----------|------------|----------------|-------------------------|
-| Python   | Repository | `arkiv-python` | Golem Base repo: `python-sdk` move and rename to `arkiv-python-beta` |
+| Python   | Repository | `arkiv-sdk-python` | Golem Base repo: `python-sdk` move and rename to `arkiv-python-beta` |
 | Python   | PIP        | `pip install arkiv-sdk`   | or `pip install arkiv` as `arkiv` is not available for Rust |
 
 
@@ -38,12 +37,14 @@ A `client.entities.*` approach for consistency with web3.py's module pattern. It
 Here's a "Hello World!" example showing how to use the Python Arkiv SDK:
 
 ```python
-from arkiv import Arkiv
 from web3 import HTTPProvider
+from arkiv import Arkiv
+from arkiv.account import NamedAccount
 
 # Initialize Arkiv client (extends Web3)
-client = Arkiv(HTTPProvider('https://rpc.arkiv.network'))
-client.eth.default_account = '0x742d35cc7731c4532b0b8849d21ca8abeffe5ddd'
+provider = HTTPProvider('https://rpc.arkiv.network')
+account = NamedAccount.create('Alice')
+client = Arkiv(provider, account = account)
 
 # Check connection and balance (standard web3.py functionality)
 print(f"Connected: {client.is_connected()}")
@@ -67,13 +68,12 @@ print(f"Entity version: {entity.entity.metadata.version}")
 
 # Clean up - delete entities
 print("\n=== Cleanup ===")
-client.arkiv.delete_entity(entity_key1)
-client.arkiv.delete_entity(entity_key2)
+client.arkiv.delete_entity(entity_key)
 print("Entities deleted")
 
 # Verify deletion
-exists = client.arkiv.exists_entity(entity_key1)
-print(f"Entity 1 still exists: {exists.exists}")
+exists = client.arkiv.exists(entity_key1)
+print(f"Entity 1 exists? {exists}")
 ```
 
 # Development Guide

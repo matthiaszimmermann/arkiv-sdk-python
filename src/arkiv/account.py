@@ -8,7 +8,7 @@ from eth_account.hdaccount import ETHEREUM_DEFAULT_PATH
 from eth_account.signers.local import LocalAccount
 from eth_typing import ChecksumAddress
 
-from .exceptions import AcccountNameException
+from .exceptions import AccountNameException
 
 # Enable unaudited HD wallet features for mnemonic support
 Account.enable_unaudited_hdwallet_features()
@@ -140,5 +140,5 @@ class NamedAccount:
 
     def _check_and_trim(self, name: str) -> str:
         if name is None or len(name.strip()) == 0:
-            raise AcccountNameException("Account name must be a non-empty string.")
+            raise AccountNameException("Account name must be a non-empty string.")
         return name.strip()

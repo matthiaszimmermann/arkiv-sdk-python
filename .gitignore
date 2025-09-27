@@ -174,7 +174,4 @@ ehthumbs_vista.db
 .testcontainers/
 
 # Project specific
-# Uncomment these if you have local development files you don't want to commit
-# .env.local
-# .env.development
-# config/local.py
+wallet_*json

@@ -17,4 +17,7 @@ ENV PATH="/root/.local/bin/:$PATH"
 # Suppress UV hardlink warnings in dev containers
 ENV UV_LINK_MODE=copy
 
+# Install dependencies
+RUN uv sync --all-groups
+
 WORKDIR /workspace

@@ -7,7 +7,9 @@ from eth_account import Account
 from eth_utils.exceptions import ValidationError
 
 from arkiv.account import NamedAccount
-from arkiv.exceptions import AcccountNameException
+from arkiv.exceptions import AccountNameException
+
+from .conftest import ALICE, BOB
 
 # Well-known test mnemonics used in these tests:
 # These should NEVER be used in production - they're for testing only!
@@ -21,6 +23,24 @@ MNEMONIC_INVALID = "not a valid mnemonic phrase"
 # Known private key and address derived from CANDY mnemonic (default path)
 PRIVATE_KEY_CANDY = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 ADDRESS_CANDY = "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
+
+
+class TestNamedAccountFixtures:
+    """Test NamedAccount fixtures."""
+
+    def test_account_1_fixture(self, account_1: NamedAccount) -> None:
+        """Test account_1 fixture."""
+        assert isinstance(account_1, NamedAccount)
+        assert account_1.name == ALICE
+
+    def test_account_2_fixture(
+        self, account_1: NamedAccount, account_2: NamedAccount
+    ) -> None:
+        """Test account_2 fixture."""
+        assert isinstance(account_2, NamedAccount)
+        assert account_2.name == BOB
+        assert account_2.name != account_1.name
+        assert account_2.address != account_1.address
 
 
 class TestNamedAccountCreation:
@@ -183,29 +203,29 @@ class TestNamedAccountValidation:
     """Test NamedAccount validation and error handling."""
 
     def test_empty_name_raises_exception(self) -> None:
-        """Test that empty name raises AcccountNameException."""
+        """Test that empty name raises AccountNameException."""
         local_account = Account.create()
 
         with pytest.raises(
-            AcccountNameException, match="Account name must be a non-empty string"
+            AccountNameException, match="Account name must be a non-empty string"
         ):
             NamedAccount("", local_account)
 
     def test_none_name_raises_exception(self) -> None:
-        """Test that None name raises AcccountNameException."""
+        """Test that None name raises AccountNameException."""
         local_account = Account.create()
 
         with pytest.raises(
-            AcccountNameException, match="Account name must be a non-empty string"
+            AccountNameException, match="Account name must be a non-empty string"
         ):
             NamedAccount(None, local_account)  # type: ignore
 
     def test_whitespace_only_name_raises_exception(self) -> None:
-        """Test that whitespace-only name raises AcccountNameException."""
+        """Test that whitespace-only name raises AccountNameException."""
         local_account = Account.create()
 
         with pytest.raises(
-            AcccountNameException, match="Account name must be a non-empty string"
+            AccountNameException, match="Account name must be a non-empty string"
         ):
             NamedAccount("   ", local_account)
 
