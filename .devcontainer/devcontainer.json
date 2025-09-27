@@ -15,7 +15,7 @@
                 "git.editor": "nano",
                 "files.insertFinalNewline": true,
                 "files.trimTrailingWhitespace": true,
-                "python.defaultInterpreterPath": "./.venv/bin/python",
+                "python.defaultInterpreterPath": "/workspace/./.venv/bin/python",
                 "python.terminal.activateEnvironment": true,
                 "python.formatting.provider": "ruff",
                 "python.analysis.extraPaths": ["./src", "./tests"],
