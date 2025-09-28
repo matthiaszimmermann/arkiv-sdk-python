@@ -91,7 +91,7 @@ def web3_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Web
 
 
 @pytest.fixture(scope="session")
-def arkiv_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Arkiv:
+def arkiv_ro_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Arkiv:
     """
     Provide Arkiv client connected to HTTP endpoint.
 
@@ -100,6 +100,26 @@ def arkiv_client_http(arkiv_node: tuple[DockerContainer | None, str, str]) -> Ar
     """
     _, http_url, _ = arkiv_node
     client = Arkiv(Web3.HTTPProvider(http_url))
+
+    # Verify connection
+    assert client.is_connected(), f"Failed to connect Arkiv client to {http_url}"
+
+    logger.info(f"Arkiv client connected to {http_url}")
+    return client
+
+
+@pytest.fixture(scope="session")
+def arkiv_client_http(
+    arkiv_node: tuple[DockerContainer | None, str, str], account_1: NamedAccount
+) -> Arkiv:
+    """
+    Provide Arkiv client connected to HTTP endpoint.
+
+    Returns:
+        Web3 client instance connected to the arkiv node
+    """
+    _, http_url, _ = arkiv_node
+    client = Arkiv(Web3.HTTPProvider(http_url), account=account_1)
 
     # Verify connection
     assert client.is_connected(), f"Failed to connect Arkiv client to {http_url}"

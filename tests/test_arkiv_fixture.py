@@ -4,7 +4,7 @@ import logging
 
 from arkiv import Arkiv
 from arkiv.account import NamedAccount
-from arkiv.entities import ArkivModule
+from arkiv.module import ArkivModule
 
 logger = logging.getLogger(__name__)
 

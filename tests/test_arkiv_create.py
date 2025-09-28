@@ -10,8 +10,8 @@ from web3.providers.auto import AutoProvider
 
 from arkiv import Arkiv
 from arkiv.account import NamedAccount
-from arkiv.entities import ArkivModule
 from arkiv.exceptions import NamedAccountNotFoundException
+from arkiv.module import ArkivModule
 
 logger = logging.getLogger(__name__)
 

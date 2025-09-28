@@ -51,6 +51,11 @@ class NamedAccount:
         """Get the private key."""
         return self._account.key
 
+    @property
+    def local_account(self) -> LocalAccount:
+        """Get the wrapped LocalAccount."""
+        return self._account
+
     def __getattr__(self, name: str) -> Any:
         """Delegate any other attributes to the wrapped LocalAccount."""
         return getattr(self._account, name)

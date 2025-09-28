@@ -10,7 +10,7 @@ from web3.providers.base import BaseProvider
 from arkiv.exceptions import NamedAccountNotFoundException
 
 from .account import NamedAccount
-from .entities import ArkivModule
+from .module import ArkivModule
 
 # Set up logger for Arkiv client
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class Arkiv(Web3):
         account = self.accounts[account_name]
         logger.debug(f"Injecting signing middleware for account: {account.address}")
         self.middleware_onion.inject(
-            SignAndSendRawMiddlewareBuilder.build(account),
+            SignAndSendRawMiddlewareBuilder.build(account.local_account),
             name=account_name,
             layer=0,
         )
