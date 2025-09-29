@@ -1,17 +1,28 @@
 """Utility methods."""
 
 import logging
+from typing import Any
 
 import rlp  # type: ignore[import-untyped]
+from hexbytes import HexBytes
 from web3 import Web3
-from web3.types import TxParams
+from web3.contract import Contract
+from web3.contract.base_contract import BaseContractEvent
+from web3.types import EventData, LogReceipt, TxParams, TxReceipt
 
-from .smart_contract import STORAGE_ADDRESS
+from . import contract
+from .contract import STORAGE_ADDRESS
 from .types import (
     Annotation,
     AnnotationValue,
     CreateOp,
+    CreateReceipt,
+    DeleteReceipt,
+    EntityKey,
+    ExtendReceipt,
     Operations,
+    TransactionReceipt,
+    UpdateReceipt,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,6 +89,91 @@ def to_tx_params(
     return tx_params
 
 
+def to_receipt(
+    contract_: Contract, tx_hash: HexBytes, tx_receipt: TxReceipt
+) -> TransactionReceipt | None:
+    """Convert a tx hash and a raw transaction receipt to a typed receipt."""
+    logger.debug(f"Transaction receipt: {tx_receipt}")
+
+    # Initialize receipt with tx hash and empty receipt collections
+    creates: list[CreateReceipt] = []
+    updates: list[UpdateReceipt] = []
+    extensions: list[ExtendReceipt] = []
+    deletes: list[DeleteReceipt] = []
+
+    receipt = TransactionReceipt(
+        tx_hash=tx_hash,
+        creates=creates,
+        updates=updates,
+        extensions=extensions,
+        deletes=deletes,
+    )
+
+    logs: list[LogReceipt] = tx_receipt["logs"]
+    for log in logs:
+        try:
+            event_data: EventData = get_event_data(contract_, log)
+            event_args: dict[str, Any] = event_data["args"]
+            event_name = event_data["event"]
+
+            match event_name:
+                case contract.CREATED_EVENT:
+                    creates.append(
+                        CreateReceipt(
+                            entity_key=EntityKey(event_args["entityKey"]),
+                            expiration_block=int(event_args["expirationBlock"]),
+                        )
+                    )
+                case contract.UPDATED_EVENT:
+                    updates.append(
+                        UpdateReceipt(
+                            entity_key=EntityKey(event_args["entityKey"]),
+                            expiration_block=int(event_args["expirationBlock"]),
+                        )
+                    )
+                case contract.DELETED_EVENT:
+                    deletes.append(
+                        DeleteReceipt(
+                            entity_key=EntityKey(event_args["entityKey"]),
+                        )
+                    )
+                case contract.EXTENDED_EVENT:
+                    extensions.append(
+                        ExtendReceipt(
+                            entity_key=EntityKey(event_args["entityKey"]),
+                            old_expiration_block=int(event_args["oldExpirationBlock"]),
+                            new_expiration_block=int(event_args["newExpirationBlock"]),
+                        )
+                    )
+                case _:
+                    logger.warning(f"Unknown event type: {event_name}")
+        except Exception:
+            # Skip logs that don't match our contract events
+            continue
+
+    return receipt
+
+
+def get_event_data(contract: Contract, log: LogReceipt) -> EventData:
+    """Extract the event data from a log receipt (Web3 standard)."""
+    logger.debug(f"Log: {log}")
+
+    # Get log topic if present
+    topics = log.get("topics", [])
+    if len(topics) > 0:
+        topic = topics[0].to_0x_hex()
+
+        # Get event data for topic
+        event: BaseContractEvent = contract.get_event_by_topic(topic)
+        event_data: EventData = event.process_log(log)
+        logger.debug(f"Event data: {event_data}")
+
+        return event_data
+
+    # No topic -> no event data
+    raise ValueError("No topic/event data found in log")
+
+
 def rlp_encode_transaction(tx: Operations) -> bytes:
     """Encode a transaction in RLP."""
 
@@ -99,7 +195,7 @@ def rlp_encode_transaction(tx: Operations) -> bytes:
         # Update
         [
             [
-                element.entity_key,
+                element.entity_key.to_bytes(),
                 element.btl,
                 element.data,
                 list(map(format_annotation, element.string_annotations)),
@@ -110,14 +206,14 @@ def rlp_encode_transaction(tx: Operations) -> bytes:
         # Delete
         [
             [
-                element.entity_key,
+                element.entity_key.to_bytes(),
             ]
             for element in tx.deletes
         ],
         # Extend
         [
             [
-                element.entity_key,
+                element.entity_key.to_bytes(),
                 element.number_of_blocks,
             ]
             for element in tx.extensions

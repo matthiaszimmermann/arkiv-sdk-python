@@ -1,16 +1,33 @@
 """Basic entity management module for Arkiv client."""
 
-from typing import TYPE_CHECKING
+import base64
+import logging
+from typing import TYPE_CHECKING, Any
 
 from hexbytes import HexBytes
+from web3 import Web3
 from web3.types import TxParams
 
-from .types import AnnotationValue, Operations
+from .contract import EVENTS_ABI, FUNCTIONS_ABI, STORAGE_ADDRESS
+from .types import (
+    AnnotationValue,
+    Entity,
+    EntityKey,
+    Metadata,
+    Operations,
+)
 from .utils import to_create_operation, to_tx_params
 
 # Deal with potential circular imports between client.py and module.py
 if TYPE_CHECKING:
     from .client import Arkiv
+
+logger = logging.getLogger(__name__)
+
+PAYLOAD = 1
+ANNOTATIONS = 2
+METADATA = 4
+ALL = PAYLOAD | ANNOTATIONS | METADATA
 
 
 class ArkivModule:
@@ -19,6 +36,16 @@ class ArkivModule:
     def __init__(self, client: "Arkiv") -> None:
         """Initialize Arkiv module with client reference."""
         self.client = client
+
+        # Attach custom Arkiv RPC methods to the eth object
+        self.client.eth.attach_methods(FUNCTIONS_ABI)
+        for method_name in FUNCTIONS_ABI.keys():
+            logger.info(f"Custom RPC method: eth.{method_name}")
+
+        # Create contract instance for events (using EVENTS_ABI)
+        self.contract = client.eth.contract(address=STORAGE_ADDRESS, abi=EVENTS_ABI)
+        for event in self.contract.all_events():
+            logger.info(f"Entity event {event.topic}: {event.signature}")
 
     def is_available(self) -> bool:
         """Check if Arkiv functionality is available."""
@@ -56,3 +83,98 @@ class ArkivModule:
         tx_hash = self.client.eth.send_transaction(tx_params)
 
         return tx_hash
+
+    def get_entity(self, entity_key: EntityKey, fields: int = ALL) -> Entity:
+        """
+        Get an entity by its entity key.
+
+        Args:
+            entity_key: The entity key to retrieve
+            fields: Bitfield indicating which fields to retrieve
+                   PAYLOAD (1) = retrieve payload
+                   METADATA (2) = retrieve metadata
+                   ANNOTATIONS (4) = retrieve annotations
+
+        Returns:
+            Entity object with the requested fields
+        """
+        # Gather the requested data
+        payload = None
+        metadata = None
+        annotations = None
+
+        # HINT: rpc methods to fetch entity content might change this is the place to adapt
+        # get and decode payload if requested
+        if fields & PAYLOAD:
+            payload = self._get_storage_value(entity_key)
+
+        # get and decode annotations and/or metadata if requested
+        if fields & METADATA or fields & ANNOTATIONS:
+            metadata_all = self._get_entity_metadata(entity_key)
+
+            if fields & METADATA:
+                # Convert owner address to checksummed format
+                owner_address = metadata_all.get("owner")
+                if not owner_address:
+                    raise ValueError("Entity metadata missing required owner field")
+                checksummed_owner = Web3.to_checksum_address(owner_address)
+
+                expires_at_block = metadata_all.get("expiresAtBlock")
+                if expires_at_block is None:
+                    raise ValueError(
+                        "Entity metadata missing required expiresAtBlock field"
+                    )
+
+                metadata = Metadata(
+                    owner=checksummed_owner,
+                    expires_at_block=int(expires_at_block),
+                )
+
+            if fields & ANNOTATIONS:
+                annotations = self._get_annotations(metadata_all)
+
+        # Create and return entity
+        return Entity(
+            entity_key=entity_key,
+            payload=payload,
+            metadata=metadata,
+            annotations=annotations,
+        )
+
+    def _get_storage_value(self, entity_key: EntityKey) -> bytes:
+        """Get the storage value stored in the given entity."""
+        # EntityKey is automatically converted by arkiv_munger
+        storage_value = base64.b64decode(self.client.eth.get_storage_value(entity_key))  # type: ignore[attr-defined]
+        logger.info(f"Storage value (decoded): {storage_value!r}")
+        return storage_value
+
+    def _get_entity_metadata(self, entity_key: EntityKey) -> dict[str, Any]:
+        """Get the metadata of the given entity."""
+        # EntityKey is automatically converted by arkiv_munger
+        metadata: dict[str, Any] = self.client.eth.get_entity_metadata(entity_key)  # type: ignore[attr-defined]
+        logger.info(f"Raw metadata: {metadata}")
+        return metadata
+
+    def _get_annotations(
+        self, metadata_all: dict[str, Any]
+    ) -> dict[str, AnnotationValue]:
+        """Extract annotations from full metadata dictionary."""
+        annotations: dict[str, AnnotationValue] = {}
+        string_annotations = metadata_all.get("stringAnnotations", [])
+        numeric_annotations = metadata_all.get("numericAnnotations", [])
+
+        if string_annotations:
+            for annotation in string_annotations:
+                key = annotation.get("key")
+                value = annotation.get("value")
+                if key is not None:
+                    annotations[key] = value
+
+        if numeric_annotations:
+            for annotation in numeric_annotations:
+                key = annotation.get("key")
+                value = annotation.get("value")
+                if key is not None:
+                    annotations[key] = value
+
+        return annotations

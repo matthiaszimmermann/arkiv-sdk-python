@@ -1,15 +1,15 @@
 """Tests for utility functions in arkiv.utils module."""
 
 import pytest
-from hexbytes import HexBytes
 from web3 import Web3
 from web3.types import Nonce, TxParams, Wei
 
-from arkiv.smart_contract import STORAGE_ADDRESS
+from arkiv.contract import STORAGE_ADDRESS
 from arkiv.types import (
     Annotation,
     CreateOp,
     DeleteOp,
+    EntityKey,
     ExtendOp,
     Operations,
     UpdateOp,
@@ -317,7 +317,7 @@ class TestRlpEncodeTransaction:
 
     def test_rlp_encode_update_operation(self) -> None:
         """Test RLP encoding with update operation."""
-        entity_key = HexBytes(
+        entity_key = EntityKey(
             "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
         )
         update_op = UpdateOp(
@@ -336,7 +336,7 @@ class TestRlpEncodeTransaction:
 
     def test_rlp_encode_delete_operation(self) -> None:
         """Test RLP encoding with delete operation."""
-        entity_key = HexBytes(
+        entity_key = EntityKey(
             "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
         )
         delete_op = DeleteOp(entity_key=entity_key)
@@ -349,7 +349,7 @@ class TestRlpEncodeTransaction:
 
     def test_rlp_encode_extend_operation(self) -> None:
         """Test RLP encoding with extend operation."""
-        entity_key = HexBytes(
+        entity_key = EntityKey(
             "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
         )
         extend_op = ExtendOp(entity_key=entity_key, number_of_blocks=500)
@@ -362,10 +362,6 @@ class TestRlpEncodeTransaction:
 
     def test_rlp_encode_mixed_operations(self) -> None:
         """Test RLP encoding with mixed operations."""
-        entity_key = HexBytes(
-            "0x1111222233334444111122223333444411112222333344441111222233334444"
-        )
-
         create_op = CreateOp(
             data=b"create data",
             btl=1000,
@@ -373,16 +369,19 @@ class TestRlpEncodeTransaction:
             numeric_annotations=[Annotation("batch", 1)],
         )
 
+        entity_key_obj = EntityKey(
+            "0x1111111111111111111111111111111111111111111111111111111111111111"
+        )
         update_op = UpdateOp(
-            entity_key=entity_key,
+            entity_key=entity_key_obj,
             data=b"update data",
             btl=1500,
             string_annotations=[Annotation("status", "modified")],
             numeric_annotations=[Annotation("revision", 3)],
         )
 
-        delete_op = DeleteOp(entity_key=entity_key)
-        extend_op = ExtendOp(entity_key=entity_key, number_of_blocks=1000)
+        delete_op = DeleteOp(entity_key=entity_key_obj)
+        extend_op = ExtendOp(entity_key=entity_key_obj, number_of_blocks=1000)
 
         operations = Operations(
             creates=[create_op],

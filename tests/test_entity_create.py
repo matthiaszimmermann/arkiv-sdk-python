@@ -6,11 +6,13 @@ from hexbytes import HexBytes
 from web3.types import TxReceipt
 
 from arkiv.client import Arkiv
-from arkiv.smart_contract import STORAGE_ADDRESS
+from arkiv.contract import STORAGE_ADDRESS
 from arkiv.types import Operations
-from arkiv.utils import to_create_operation, to_tx_params
+from arkiv.utils import to_create_operation, to_receipt, to_tx_params
 
 logger = logging.getLogger(__name__)
+
+TX_SUCCESS = 1
 
 
 class TestEntityCreate:
@@ -19,13 +21,16 @@ class TestEntityCreate:
     def test_create_entity_with_payload_web3(self, arkiv_client_http: Arkiv) -> None:
         """Test create_entity with custom payload checking against Web3 client behavior."""
         payload = b"Hello world!"
+        annotations: dict[str, str | int] = {"type": "Greeting", "version": 1}
         btl = 60  # 60 blocks to live
 
         # Get the expected sender address from client's default account
         expected_from_address = arkiv_client_http.eth.default_account
 
         # Wrap in Operations container
-        create_op = to_create_operation(payload=payload, btl=btl)
+        create_op = to_create_operation(
+            payload=payload, annotations=annotations, btl=btl
+        )
         operations = Operations(creates=[create_op])
 
         # Convert to transaction parameters and send
@@ -47,11 +52,14 @@ class TestEntityCreate:
         logger.info(f"Transaction confirmed in block {tx_receipt['blockNumber']}")
         logger.info(f"Gas used: {tx_receipt['gasUsed']}")
         logger.info(
-            f"Transaction status: {'SUCCESS' if tx_receipt['status'] == 1 else 'FAILED'}"
+            f"Transaction status: {'SUCCESS' if tx_receipt['status'] == TX_SUCCESS else 'FAILED'}"
         )
+        receipt = to_receipt(arkiv_client_http.arkiv.contract, tx_hash, tx_receipt)
+        assert receipt is not None, "Receipt should not be None"
+        logger.info(f"Arkiv receipt: {receipt}")
 
         # Verify transaction was successful
-        assert tx_receipt["status"] == 1, "Transaction should have succeeded"
+        assert tx_receipt["status"] == TX_SUCCESS, "Transaction should have succeeded"
 
         # Verify transaction was included in a block
         assert tx_receipt["blockNumber"] is not None, "Transaction should be in a block"
@@ -93,3 +101,31 @@ class TestEntityCreate:
         logger.info(f"Transaction data length: {len(tx_data)} bytes")
 
         logger.info("Entity creation successful")
+
+        # assert that receipt has a creates field
+        assert hasattr(receipt, "creates"), "Receipt should have 'creates' field"
+        assert len(receipt.creates) > 0, (
+            "Receipt should have at least one entry in 'creates'"
+        )
+        create = receipt.creates[0]
+        # check that create has an entity_key attribute
+        assert hasattr(create, "entity_key"), (
+            "Create receipt should have 'entity_key' attribute"
+        )
+        entity_key = create.entity_key
+        assert entity_key is not None, "Entity key should not be None"
+        logger.info(f"Entity key: {entity_key}")
+
+        entity = arkiv_client_http.arkiv.get_entity(entity_key)
+        logger.info(f"Entity: {entity}")
+
+        assert entity.entity_key == entity_key, "Entity key should match"
+        assert entity.payload == payload, "Entity payload should match"
+        assert entity.annotations == annotations, "Entity annotations should match"
+        assert entity.metadata is not None, "Entity metadata should not be None"
+        assert entity.metadata.owner == expected_from_address, (
+            "Entity owner should match transaction sender"
+        )
+        assert entity.metadata.expires_at_block > tx_receipt["blockNumber"], (
+            "Entity expiration block should be in the future"
+        )
