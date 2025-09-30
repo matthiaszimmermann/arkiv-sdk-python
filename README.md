@@ -12,7 +12,7 @@ SDK should be directly derived from one of the most well known and more recent c
 
 Highlevel goals:
 1. Go with the flow of the language and the library.
-2. Whatever works for the library should also work for the SDK
+2. Whatever works for the library should also work for the SDK.
 3. Feels like "Library + Entities".
 
 ### Underlying Library
