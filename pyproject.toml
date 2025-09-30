@@ -30,6 +30,7 @@ lint = [
     "pre-commit>=4.0.0",
 ]# Development utilities
 dev = [
+    "pytest-cov>=7.0.0",
     "python-dotenv>=1.0.0",
 ]
 

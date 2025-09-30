@@ -41,31 +41,30 @@ from web3 import HTTPProvider
 from arkiv import Arkiv
 from arkiv.account import NamedAccount
 
+with open ('wallet_alice.json', 'r') as f:
+    wallet = f.read()
+
 # Initialize Arkiv client (extends Web3)
-provider = HTTPProvider('https://rpc.arkiv.network')
-account = NamedAccount.create('Alice')
+provider = HTTPProvider('https://kaolin.hoodi.arkiv.network/rpc')
+account = NamedAccount.from_wallet('Alice', wallet, 's3cret')
 client = Arkiv(provider, account = account)
 
-# Check connection and balance (standard web3.py functionality)
+# Check connection
 print(f"Connected: {client.is_connected()}")
-balance = client.eth.get_balance(client.eth.default_account)
-print(f"Account balance: {client.fromWei(balance, 'ether')} ETH")
 
-# Simple entity with data only (Arkiv functionality)
-entity_key = client.arkiv.create_entity(
-    data=b"Hello World!",
-    annotations={"type": "greeting", "version": 1}
+# Create entity with data and annotations
+entity_key, tx_hash = client.arkiv.create_entity(
+    payload=b"Hello World!",
+    annotations={"type": "greeting", "version": 1},
+    btl = 1000
 )
-print(f"Created entity 1: {entity_key}")
+print(f"Created entity: {entity_key}")
 
-# Get individual entity
-print("\n=== Entity Details ===")
+# Get individual entity and print its details
 entity = client.arkiv.get_entity(entity_key)
-print(f"Entity data: {entity.entity.data.decode()}")
-print(f"Entity annotations: {entity.entity.annotations}")
-print(f"Entity owner: {entity.entity.metadata.owner}")
-print(f"Entity version: {entity.entity.metadata.version}")
+print(f"Entity: {entity}")
 
+# TODO
 # Clean up - delete entities
 print("\n=== Cleanup ===")
 client.arkiv.delete_entity(entity_key)
@@ -75,6 +74,34 @@ print("Entities deleted")
 exists = client.arkiv.exists(entity_key1)
 print(f"Entity 1 exists? {exists}")
 ```
+
+Arkiv extensions
+```python
+from arkiv import Arkiv
+from arkiv.account import NamedAccount
+
+account = NamedAccount.from_wallet('Alice', wallet, 's3cret')
+client = Arkiv(provider, account = account)
+
+entity_key, tx_hash = client.arkiv.create_entity(
+    payload=b"Hello World!",
+    annotations={"type": "greeting", "version": 1},
+    btl = 1000
+)
+
+entity = client.arkiv.get_entity(entity_key)
+````
+
+Web3 standard
+```python
+from web3 import HTTPProvider
+provider = HTTPProvider('https://kaolin.hoodi.arkiv.network/rpc')
+
+# Arkiv 'is a' Web3 client
+client = Arkiv(provider)
+balance = client.eth.get_balance(client.eth.default_account)
+client.eth.get_transaction(tx_hash)
+````
 
 # Development Guide
 
@@ -99,6 +126,7 @@ uv run ruff check . --fix    # Lint and auto-fix
 uv run ruff format .         # Format code
 uv run mypy src/ tests/      # Type check
 uv run pytest tests/ -v     # Run tests
+uv run pytest --cov=src   # Run code coverage
 ```
 
 ### Pre-commit Hooks

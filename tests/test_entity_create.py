@@ -7,12 +7,32 @@ from web3.types import TxReceipt
 
 from arkiv.client import Arkiv
 from arkiv.contract import STORAGE_ADDRESS
-from arkiv.types import Operations
+from arkiv.types import EntityKey, Operations
 from arkiv.utils import to_create_operation, to_receipt, to_tx_params
 
 logger = logging.getLogger(__name__)
 
 TX_SUCCESS = 1
+
+
+def check_entity_key(label: str, entity_key: EntityKey) -> None:
+    """Check entity key validity."""
+    logger.info(f"{label}: Checking entity key {entity_key}")
+    assert entity_key is not None, f"{label}: Entity key should not be None"
+    assert isinstance(entity_key, EntityKey), f"{label}: Entity key should be EntityKey"
+    assert len(entity_key.to_bytes()) == 32, (
+        f"{label}: Entity key should be 32 bytes long"
+    )
+
+
+def check_tx_hash(label: str, tx_hash: HexBytes) -> None:
+    """Check transaction hash validity."""
+    logger.info(f"{label}: Checking transaction hash {tx_hash.to_0x_hex()}")
+    assert tx_hash is not None, f"{label}: Transaction hash should not be None"
+    assert isinstance(tx_hash, HexBytes), (
+        f"{label}: Transaction hash should be HexBytes"
+    )
+    assert len(tx_hash) == 32, f"{label}: Transaction hash should be 32 bytes long"
 
 
 class TestEntityCreate:
@@ -129,3 +149,34 @@ class TestEntityCreate:
         assert entity.metadata.expires_at_block > tx_receipt["blockNumber"], (
             "Entity expiration block should be in the future"
         )
+
+    def test_create_entity(self, arkiv_client_http: Arkiv) -> None:
+        """Test create_entity."""
+        pl: bytes = b"Hello world!"
+        ann: dict[str, str | int] = {"type": "Greeting", "version": 1}
+        btl: int = 60
+
+        entity_key, tx_hash = arkiv_client_http.arkiv.create_entity(
+            payload=pl, annotations=ann, btl=btl
+        )
+
+        label = "create_entity (a)"
+        check_entity_key(label, entity_key)
+        check_tx_hash(label, tx_hash)
+
+        entity = arkiv_client_http.arkiv.get_entity(entity_key)
+        logger.info(f"{label}: Retrieved entity: {entity}")
+
+        assert entity.entity_key == entity_key, f"{label}: Entity key should match"
+        assert entity.payload == pl, f"{label}: Entity payload should match"
+        assert entity.annotations == ann, f"{label}: Entity annotations should match"
+        assert entity.metadata is not None, (
+            f"{label}: Entity metadata should not be None"
+        )
+        assert entity.metadata.owner == arkiv_client_http.eth.default_account, (
+            f"{label}: Entity owner should match transaction sender"
+        )
+        assert entity.metadata.expires_at_block > 0, (
+            f"{label}: Entity expiration block should be in the future"
+        )
+        logger.info(f"{label}: Entity creation and retrieval successful")

@@ -91,7 +91,7 @@ def to_tx_params(
 
 def to_receipt(
     contract_: Contract, tx_hash: HexBytes, tx_receipt: TxReceipt
-) -> TransactionReceipt | None:
+) -> TransactionReceipt:
     """Convert a tx hash and a raw transaction receipt to a typed receipt."""
     logger.debug(f"Transaction receipt: {tx_receipt}")
 
@@ -241,3 +241,21 @@ def split_annotations(
                 numeric_annotations.append(annotation)
 
     return string_annotations, numeric_annotations
+
+
+def merge_annotations(
+    string_annotations: list[Annotation] | None = None,
+    numeric_annotations: list[Annotation] | None = None,
+) -> dict[str, AnnotationValue]:
+    """Helper to merge string and numeric annotations into a single dictionary."""
+    annotations: dict[str, AnnotationValue] = {}
+
+    if string_annotations:
+        for annotation in string_annotations:
+            annotations[annotation.key] = annotation.value
+
+    if numeric_annotations:
+        for annotation in numeric_annotations:
+            annotations[annotation.key] = annotation.value
+
+    return annotations

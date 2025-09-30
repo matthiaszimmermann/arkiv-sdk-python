@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from hexbytes import HexBytes
 from web3 import Web3
-from web3.types import TxParams
+from web3.types import TxParams, TxReceipt
 
 from .contract import EVENTS_ABI, FUNCTIONS_ABI, STORAGE_ADDRESS
 from .types import (
@@ -15,8 +15,9 @@ from .types import (
     EntityKey,
     Metadata,
     Operations,
+    TransactionReceipt,
 )
-from .utils import to_create_operation, to_tx_params
+from .utils import merge_annotations, to_create_operation, to_receipt, to_tx_params
 
 # Deal with potential circular imports between client.py and module.py
 if TYPE_CHECKING:
@@ -28,6 +29,8 @@ PAYLOAD = 1
 ANNOTATIONS = 2
 METADATA = 4
 ALL = PAYLOAD | ANNOTATIONS | METADATA
+
+TX_SUCCESS = 1
 
 
 class ArkivModule:
@@ -57,7 +60,7 @@ class ArkivModule:
         annotations: dict[str, AnnotationValue] | None = None,
         btl: int = 0,
         tx_params: TxParams | None = None,
-    ) -> HexBytes:
+    ) -> tuple[EntityKey, HexBytes]:
         """
         Create a new entity on the Arkiv storage contract.
 
@@ -79,10 +82,26 @@ class ArkivModule:
         operations = Operations(creates=[create_op])
 
         # Convert to transaction parameters and send
+        client: Arkiv = self.client
         tx_params = to_tx_params(operations, tx_params)
-        tx_hash = self.client.eth.send_transaction(tx_params)
+        tx_hash = client.eth.send_transaction(tx_params)
 
-        return tx_hash
+        tx_receipt: TxReceipt = client.eth.wait_for_transaction_receipt(tx_hash)
+        tx_status: int = tx_receipt["status"]
+        if tx_status != TX_SUCCESS:
+            raise RuntimeError(f"Transaction failed with status {tx_status}")
+
+        # assert that receipt has a creates field
+        receipt: TransactionReceipt = to_receipt(
+            client.arkiv.contract, tx_hash, tx_receipt
+        )
+        creates = receipt.creates
+        if len(creates) == 0:
+            raise RuntimeError("Receipt should have at least one entry in 'creates'")
+
+        create = creates[0]
+        entity_key = create.entity_key
+        return entity_key, tx_hash
 
     def get_entity(self, entity_key: EntityKey, fields: int = ALL) -> Entity:
         """
@@ -131,7 +150,10 @@ class ArkivModule:
                 )
 
             if fields & ANNOTATIONS:
-                annotations = self._get_annotations(metadata_all)
+                annotations = merge_annotations(
+                    string_annotations=metadata_all.get("stringAnnotations", []),
+                    numeric_annotations=metadata_all.get("numericAnnotations", []),
+                )
 
         # Create and return entity
         return Entity(
@@ -154,27 +176,3 @@ class ArkivModule:
         metadata: dict[str, Any] = self.client.eth.get_entity_metadata(entity_key)  # type: ignore[attr-defined]
         logger.info(f"Raw metadata: {metadata}")
         return metadata
-
-    def _get_annotations(
-        self, metadata_all: dict[str, Any]
-    ) -> dict[str, AnnotationValue]:
-        """Extract annotations from full metadata dictionary."""
-        annotations: dict[str, AnnotationValue] = {}
-        string_annotations = metadata_all.get("stringAnnotations", [])
-        numeric_annotations = metadata_all.get("numericAnnotations", [])
-
-        if string_annotations:
-            for annotation in string_annotations:
-                key = annotation.get("key")
-                value = annotation.get("value")
-                if key is not None:
-                    annotations[key] = value
-
-        if numeric_annotations:
-            for annotation in numeric_annotations:
-                key = annotation.get("key")
-                value = annotation.get("value")
-                if key is not None:
-                    annotations[key] = value
-
-        return annotations

@@ -4,5 +4,10 @@
         "titleBar.activeForeground": "#FFFFFF",
         "titleBar.inactiveBackground": "#00796B",
         "titleBar.inactiveForeground": "#E0F2F1"
-    }
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
